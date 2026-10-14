@@ -1,0 +1,117 @@
+:root {
+  --clr-primary-400: hsl(75, 94%, 57%);
+
+  --clr-neutral-100: hsl(0, 0%, 100%);
+  --clr-neutral-400: hsl(0, 0%, 20%);
+  --clr-neutral-600: hsl(0, 0%, 12%);
+  --clr-neutral-900: hsl(0, 0%, 8%);
+
+  --ff-base: "Inter", sans-serif;
+
+  --fw-regular: 400;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+}
+
+/* Basic Css Reset */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Make images easier to work with */
+img,
+picture {
+  max-width: 100%;
+  display: block;
+}
+
+body {
+  font-family: var(--ff-base);
+
+  background-color: var(--clr-neutral-900);
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+}
+
+.social-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  background-color: var(--clr-neutral-600);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  min-height: max-content;
+  min-width: 300px;
+  max-width: 300px;
+
+}
+
+.author-info {
+  display: grid;
+  text-align: center;
+}
+
+h1 {
+  color: var(--clr-neutral-100);
+  font-size: 1.2rem;
+}
+
+img {
+  max-width: 84px;
+  border-radius: 50%;
+}
+
+span {
+  color: var(--clr-primary-400);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+}
+
+p {
+  color: var(--clr-neutral-100);
+  font-size: .8rem;
+}
+
+.social-buttons {
+  display: grid;
+  gap: 1rem;
+  min-height: 250px;
+  width: 100%;
+}
+
+.social-buttons button {
+  cursor: pointer;
+  border: none;
+  color: var(--clr-neutral-100);
+  border-radius: 0.5rem;
+  background-color: var(--clr-neutral-400);
+}
+
+.social-buttons button:is(:hover, :focus) {
+  color: var(--clr-neutral-900);
+  background-color: var(--clr-primary-400);
+}
+
+.attribution {
+  color: bisque;
+  font-size: 11px;
+  text-align: center;
+  position: fixed;
+  inset: auto 0 0;
+  margin: auto;
+}
+
+.attribution a {
+  color: hsl(0, 0%, 94%);
+}

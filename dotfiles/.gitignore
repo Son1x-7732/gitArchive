@@ -1,0 +1,9 @@
+.cache
+.local
+.gnupg
+.ssh
+*.log
+.history
+.bash_history
+.zsh_history
+secrets.txt

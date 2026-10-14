@@ -1,0 +1,378 @@
+13) Simple checklist to score a live candidate (one-minute run)
+
+Nifty 50 member? Y/N
+
+ADTV percentile ≥ 50? Y/N
+
+Daily trend: above 50SMA? Y/N
+
+Setup type A/B/C? (mark)
+
+ATR-based stop? computed
+
+Risk per trade ≤ 1%? computed
+
+Sector exposure OK? Y/N
+
+If you answered Yes to most and risk fits, you can take the trade.
+
+14) Example trade (quick)
+
+Capital ₹200,000, Risk 1% = ₹2,000.
+
+Stock entry ₹2,000, ATR(14) = ₹40 → stop = entry − 1.5×ATR = 2000 − 60 = ₹1940 → risk/share = ₹60.
+
+Shares = 2000 / 60 ≈ 33 shares. Position value ≈ 66,000 (33 × 2000) → 33% of capital (within 10–20% cap? It’s >20%, so reduce shares or lower % allocation). So you’d cap allocation to 20% of capital = ₹40,000 → max shares = 40,000 / 2000 = 20 shares. That also reduces risk to 20 × 60 = ₹1,200 (0.6% risk) — acceptable.
+
+Target 1.5R = ₹90 → target price = 2000 + 90 = ₹2,090.
+
+15) Final practical ruleset — TL;DR (pin this)
+
+Trade only liquid Nifty 50 names.
+
+Keep portfolio to 2–4 active swing positions (start with 2–3).
+
+Risk 0.5–1% per trade. Use ATR for stop calculation.
+
+Entry only on defined setups (pullback/volume breakout/range bounce).
+
+Max allocation per stock 10–20% of capital.
+
+Use partial profit-taking and trailing stops.
+
+Log every trade and respect your stops.
+
+Overview
+
+The program runs a daily pipeline:
+
+Market Pre-Flight (Nifty 50 daily) → if pass, then
+
+Universe Filter (Nifty 50 membership, liquidity, event checks) → then
+
+Indicator calculations (50EMA, 200EMA, ATR14, ADX14, volume ADTV20) → then
+
+Setup detection (Pullback to 50EMA + confirmation) → then
+
+Sizing, risk checks, sector/correlation checks → then
+
+Emit actionable signal JSON (entry/stop/targets/size) or no-signal.
+
+Global parameters (defaults — make all tunable)
+
+timeframe_primary = Daily
+
+timeframe_confirm = 4H (optional)
+
+market_preflight_EMA_short = 50
+
+market_preflight_EMA_long = 200
+
+stock_EMA_short = 50
+
+stock_EMA_long = 200
+
+atr_length = 14
+
+adx_length = 14
+
+adx_threshold = 25
+
+atr_stop_multiplier = 1.5
+
+reward_r = 2.0 (primary target = 2R)
+
+partial_take_at_r = 2.0
+
+trail_at_r = 2.0 (start trailing after 2R)
+
+max_position_allocation_pct = 20% (of portfolio)
+
+risk_per_trade_pct = 1.0% (of portfolio; allow 0.5–1.0)
+
+max_active_positions = 3 (recommend 2–4)
+
+adtv_days = 20
+
+adtv_min_inr = 50_00_00_000 (₹50 Crore expressed in paise/units — programmatically: 50_00_00_000)
+
+pullback_threshold_pct = <= 1.5% (price should be within 1.5% of 50EMA) or within <= 1 × ATR of 50EMA (use OR or AND as desired)
+
+no_event_window_days = 3 (filter out earnings / corporate action within next 3 trading days)
+
+sector_max_same = 2
+
+Data Inputs Required
+
+Daily OHLCV for Nifty 50 and each stock (adjusted close for corporate actions)
+
+Intraday 4H OHLCV if confirm timeframe used
+
+Corporate calendar (earnings, dividend record dates, buybacks)
+
+Stock metadata (sector, F&O eligibility, free-float, Nifty membership)
+
+ADTV computation window (20 trading days)
+
+Market Pre-Flight (function: market_preflight)
+
+Rules (must pass both):
+
+Nifty50_price_today > EMA(Nifty50, 50) (price = daily close)
+
+EMA(Nifty50, 50) > EMA(Nifty50, 200)
+
+If either is false → return Market = NO_GO (no new longs).
+
+Universe Filter (function: universe_filter(stock))
+
+A stock is eligible only if ALL true:
+
+is_nifty50_member == True
+
+ADTV(20) >= adtv_min_inr (default ₹50 Crore)
+
+no corporate events in next no_event_window_days
+
+price_data_complete (no missing values last 60 days)
+
+optional: F&O eligibility == True (if you want only F&O)
+
+Indicator Calculation (function: indicators(stock))
+
+Compute on Daily:
+
+EMA50 = EMA(close, 50)
+
+EMA200 = EMA(close, 200)
+
+ATR14 = ATR(14) (use True ATR)
+
+ADX14 = ADX(14) (Directional Movement)
+
+ADTV20 = average(volume * close) over 20 days (use turnover in INR or shares * close)
+
+DistanceFromEMA50_pct = (close - EMA50)/EMA50 * 100
+
+High-Probability Setup Detection (function: detect_pullback(stock))
+
+Core conditions to mark a candidate:
+
+Trend filters (must pass):
+
+close > EMA50 AND EMA50 > EMA200 (stock-level trend)
+
+ADX14 >= adx_threshold (≥25)
+
+Pullback proximity (one of these must pass):
+
+abs(close - EMA50) <= pullback_threshold_pct (default 1.5%)
+OR
+
+abs(close - EMA50) <= ATR14 (price within 1×ATR of EMA50)
+
+Volume/Confirmation (choose one):
+
+volume_today >= avg_volume_20 (volume >= 20-day average) — OR —
+
+close > open AND close > prior_candle_high (bullish confirmation candle on daily)
+
+No near-term event (already filtered in universe)
+
+If all above true → mark setup_type = "PullbackTo50EMA" and proceed to sizing.
+
+Entry rule (programmatic)
+
+Primary entry: place signal to buy on next open or on close depending on your execution model.
+
+Conservative: wait for the confirmation candle to close above prior high and then enter at next open.
+
+Aggressive: buy at close of confirmation candle.
+
+Include entry_price = next_open_estimate or last_close if immediate fill model.
+
+Stop Loss and Targets
+
+stop_price = entry_price - (atr_stop_multiplier × ATR14)
+
+Default multiplier = 1.5
+
+risk_per_share = entry_price - stop_price
+
+target_price_primary = entry_price + reward_r × risk_per_share (default reward_r = 2.0)
+
+Position Sizing (function: compute_size)
+
+Algorithm (exact, deterministic):
+
+portfolio_value = P (live capital)
+
+risk_money = P × risk_per_trade_pct (e.g., 1% → 0.01 * P)
+
+raw_shares = floor( risk_money / risk_per_share )
+
+max_shares_by_alloc = floor( (max_position_allocation_pct × P) / entry_price )
+
+shares = min(raw_shares, max_shares_by_alloc)
+
+If shares == 0 → skip signal (risk too large or allocation too small)
+
+actual_risk_money = shares × risk_per_share
+
+Ensure actual_risk_money <= risk_money (guaranteed by min). If you want exact risk, you may reduce shares by 1 until condition is true.
+
+Round shares to exchange lot size if required.
+
+Return: shares, position_value, actual_risk_money, risk_pct_of_portfolio.
+
+Sector/Correlation & Portfolio Risk Check (function: portfolio_checks)
+
+Before emitting signal:
+
+If active_positions >= max_active_positions → reject or queue with priority.
+
+If count_positions_in_sector(sector) >= sector_max_same → reject
+
+Estimate worst-case simultaneous stop impact: sum_of_all_actual_risk_money_if_all_stops_hit. If > max_total_risk_threshold (e.g., 6% of portfolio) → reduce position or skip.
+
+Optional: compute correlation between candidate and existing positions; if correlation too high (>0.8) reduce size.
+
+Signal JSON (exact fields emitted)
+{
+  "symbol": "ICICIBANK.NS",
+  "timestamp": "2025-10-03T15:30:00+05:30",
+  "setup": "PullbackTo50EMA",
+  "market_preflight": "PASS",
+  "indicators": {
+    "close": 1150,
+    "EMA50": 1148,
+    "EMA200": 1020,
+    "ATR14": 22,
+    "ADX14": 28,
+    "ADTV20_INR": 600000000
+  },
+  "entry": {
+    "entry_type": "next_open",
+    "entry_price": 1150
+  },
+  "risk": {
+    "stop_price": 1117,
+    "risk_per_share": 33,
+    "target_price_1": 1216,
+    "target_price_2": 1279  // optional longer target
+  },
+  "sizing": {
+    "portfolio_value": 200000,
+    "risk_per_trade_pct": 0.01,
+    "risk_money_allowed": 2000,
+    "raw_shares": 60,
+    "max_shares_by_alloc": 34,
+    "final_shares": 34,
+    "actual_risk_money": 1122
+  },
+  "checks": {
+    "sector_ok": true,
+    "max_positions_ok": true
+  },
+  "notes": "volume >= avg20; ADX >= 25; close within 1xATR of EMA50"
+}
+
+Execution semantics
+
+Signal generation happens after market close (end-of-day run) or intraday after 4H candle close if you use confirm timeframe.
+
+Order placement: decide if you place market at next open or create limit orders near close price.
+
+Stop placement: place GTC stop-loss order immediately after fill (OCO if broker supports).
+
+Trade Management rules
+
+On reaching partial_take_at_r (2R), auto-sell X% of position (default 50%) and move stop on remainder to breakeven + small buffer or trail by 1 × ATR.
+
+If trade reaches trail_at_r, start trailing stop = close - ATR14 (or use high-of-day − ATR).
+
+If price closes below EMA50 while in-position and momentum collapses (ADX < 20 on two consecutive days), consider manual exit.
+
+Backtest & Metrics to track
+
+Win rate, average R multiple, profit factor, max drawdown, annualized return, Sharpe, Sortino, avg holding time.
+
+Track slippage and execution model assumptions (enter-at-close vs next-open).
+
+Track signals rejected by allocation/portfolio checks for analysis.
+
+Edge cases & robustness
+
+Corporate actions: use adjusted prices for EMA/ATR. For real execution, use unadjusted intraday for order prices but adjust trend calculation for splits/dividends.
+
+Missing ticks: if last close missing, skip.
+
+Thin liquidity on extreme moves: if ADTV drops for 5 days or more, remove stock.
+
+Earnings gap: if gap below stop before market open, handle via gap rules (fill is at open; realized loss may exceed calculated risk).
+
+Pseudocode (core flow)
+if not market_preflight():
+    return no_signals
+
+candidates = []
+for stock in universe:
+    if not universe_filter(stock): continue
+    ind = indicators(stock)
+    if detect_pullback(ind):
+        sizing = compute_size(ind, portfolio)
+        if sizing.final_shares > 0 and portfolio_checks(sizing, stock):
+            signal = build_signal_json(stock, ind, sizing)
+            candidates.append(signal)
+
+# rank candidates by score (ADX, proximity to EMA50, ADTV)
+emit_top_n_signals(candidates, n = max_active_positions - active_positions)
+
+Simple scoring function (0–100) to rank candidates
+
+ADX component: min(20, ADX - 20) * 2.5 (gives up to 50)
+
+Proximity to EMA50: max(0, 25 - abs(distance_pct × 10)) (up to 25)
+
+Volume score: min(25, (ADTV / adtv_min_inr) * 12.5) (up to 25)
+Normalize and sum; prefer higher scores.
+
+Unit tests & QA checks to implement
+
+Test EMA & ATR computations vs known library values.
+
+Backtest using historical data ensuring indicator windows use adjusted prices.
+
+Test sizing algorithm edge cases: very small risk_per_share → large shares capped by allocation.
+
+Sector exposure test: simulate multiple signals from same sector.
+
+Monitoring & Alerts
+
+Alert if market_preflight flips from PASS→NO_GO (pause entries).
+
+Alert on any signal where actual_risk_money > risk_money (logic bug).
+
+Daily report: signals emitted, P/L of active positions, drawdown estimates.
+
+Human checklist (one-line copy-paste for manual use)
+
+Market preflight PASS (Nifty close > EMA50 and EMA50 > EMA200).
+
+Stock ∈ Nifty50, ADTV20 ≥ ₹50 Cr, no events next 3 days.
+
+Stock close > EMA50 > EMA200 and ADX14 ≥ 25.
+
+Close within ≤1.5% of EMA50 OR within ≤1×ATR14 of EMA50.
+
+Confirmation candle: volume ≥ avg20 OR close > prior high.
+
+Compute stop = entry − 1.5×ATR14; target = entry + 2R.
+
+Compute shares by min(risk-based, allocation-based), round to lot.
+
+Sector & max positions OK → place entry + SL + OCO.
+
+Partial exit at 2R, trail remainder by 1×ATR.
+
+Log trade and monitor daily.

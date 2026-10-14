@@ -1,0 +1,3 @@
+  Copy files to: /opt/REAPER
+  + Perform desktop integration for /opt/REAPER/reaper
+  + Symlink /usr/local/bin/reaper to /opt/REAPER/reaper

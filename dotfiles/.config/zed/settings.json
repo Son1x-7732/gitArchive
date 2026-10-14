@@ -1,0 +1,75 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+//
+
+{
+  "indent_guides": {
+    "line_width": 2,
+    "active_line_width": 3,
+    "background_coloring": "disabled",
+    "coloring": "indent_aware"
+  },
+  "ui_font_weight": 500.0,
+  "scrollbar": {
+    "show": "never"
+  },
+  "tab_size": 2,
+  "buffer_line_height": "comfortable",
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000,
+    },
+  },
+  "agent_ui_font_size": 16.0,
+  "buffer_font_family": "MartianMono Nerd Font",
+  "ui_font_family": "Fira Sans",
+  "icon_theme": "Zed (Default)",
+  "telemetry": {
+    "diagnostics": true,
+    "metrics": false,
+  },
+  "base_keymap": "VSCode",
+  "ui_font_size": 18.0,
+  "buffer_font_size": 16.0,
+  "theme": {
+    "mode": "dark",
+    "light": "Nord Light",
+    "dark": "Catppuccin Frappé (Blur) [Light]",
+  },
+  "toolbar": {
+    "breadcrumbs": false,
+    "quick_actions": false,
+    "selections_menu": false,
+    "agent_review": false,
+    "code_actions": false,
+  },
+  // QoL 1: Better Typography
+  // Enables ligatures (arrows, math symbols) for MartianMono
+  "buffer_font_features": {
+    "calt": false,
+  },
+
+  // QoL 4: Terminal Tweaks
+  // Ensures the terminal inside Zed uses the same font family
+  "terminal": {
+    "scrollbar": {
+      "show": "never"
+    },
+    "cursor_shape": "bar",
+    "font_family": "JetBrainsMono Nerd Font",
+    "font_size": 16.0,
+    "line_height": "standard",
+    "dock": "right",
+  },
+  // QoL 5: Project Panel
+  // Makes the file explorer on the left less cramped
+  "project_panel": {
+    "indent_size": 20,
+  },
+}
